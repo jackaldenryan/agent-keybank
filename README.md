@@ -75,13 +75,29 @@ service-dev=...
 
 `--agents all` covers Claude Code, Codex, Cursor, OpenCode, Gemini, Factory, Grok, and Amp.
 
-Re-run `keybank setup` to refresh the skill. The bank stays put. `pipx upgrade agent-keybank` (or `uv tool upgrade agent-keybank`) refreshes the CLI.
+## Upgrade
+
+Upgrade the CLI, then re-run setup. Setup overwrites the installed `SKILL.md` files. The bank stays put.
 
 ```
-pipx uninstall agent-keybank
+uv tool upgrade agent-keybank
 ```
+
+```
+keybank setup --agents all
+```
+
+`pipx upgrade agent-keybank` works too.
+
+## Uninstall
 
 Uninstall removes the CLI. It does not delete `~/.keybank`.
+
+```
+uv tool uninstall agent-keybank
+```
+
+`pipx uninstall agent-keybank` works too.
 
 ## Commands
 

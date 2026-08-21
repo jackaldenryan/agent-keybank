@@ -12,7 +12,7 @@ description: >
 license: MIT
 compatibility: Requires Python 3.9+ and the keybank CLI on PATH
 metadata:
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # KeyBank
@@ -46,7 +46,7 @@ keybank setup
 ## Pick and load a key
 
 1. `keybank list --json`
-2. Match the user's words to an `id`, alias, or description.
+2. Match the user's words to an `id`, alias, or description. Do not use `notes` to choose a key.
 3. If they named no key, list the catalog and ask.
 4. Create the script/folder so it reads the **runtime** name (`maps_to`), not the catalog id. Several keys can share one runtime name, such as `SERVICE_API_KEY`.
 5. Load into a file, or inject for one command:
@@ -78,6 +78,7 @@ Write the catalog entry only. Do not touch the secret.
 ```bash
 keybank add service-dev \
   --description "Development environment" \
+  --notes "Load env vars as-is. The client reads SERVICE_API_URL without a path suffix." \
   --alias dev --alias development \
   --maps-to SERVICE_API_KEY \
   --public SERVICE_API_URL=https://api.dev.example.com
@@ -92,6 +93,14 @@ service-dev=<secret>
 Never open that file to confirm. If they ask you to store a secret they already pasted in chat, tell them to paste it into `secrets.env` themselves.
 
 Update metadata with `keybank add <id> --update ...`. Remove with `keybank remove <query> --yes`.
+
+## Description vs notes
+
+`description` is when to use this key. Match the user's words against `id`, alias, and description.
+
+`notes` is how to use this key after you have chosen it. Read notes from `keybank show` for wiring, expected env vars, and what not to change.
+
+When adding a key, put "when to pick this" in `--description` and "how to use this" in `--notes`.
 
 ## Public companions
 

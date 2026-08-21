@@ -9,10 +9,10 @@ The same skill can add a new API key from a description. The only thing you past
 1. Install the CLI.
 
 ```
-pipx install agent-keybank
+uv tool install agent-keybank
 ```
 
-`uv tool install agent-keybank` works too.
+`pipx install agent-keybank` works too.
 
 2. Run setup once. It creates `~/.keybank` and asks which coding agents you use, then installs the skill for those agents.
 
@@ -59,7 +59,7 @@ The bank is on the machine, not in any git repo. Override the location with `KEY
 
 | File | Who may read it | What it holds |
 | --- | --- | --- |
-| `~/.keybank/catalog.yaml` | You and agents | Id, description, aliases, runtime name, public companions |
+| `~/.keybank/catalog.yaml` | You and agents | Id, description, notes, aliases, runtime name, public companions |
 | `~/.keybank/secrets.env` | You and the `keybank` CLI only | The secret for each id |
 
 `catalog.yaml` never contains secrets. `secrets.env` is mode `600` and stores values under the catalog id:
@@ -130,6 +130,7 @@ Add a catalog entry. Then paste the secret into `~/.keybank/secrets.env`. You ca
 ```
 keybank add service-dev \
   --description "Development environment" \
+  --notes "Load env vars as-is. The client reads SERVICE_API_URL without a path suffix." \
   --alias dev --alias development \
   --maps-to SERVICE_API_KEY \
   --public SERVICE_API_URL=https://api.dev.example.com
@@ -145,6 +146,7 @@ Agents may read this file. Keep secrets out of it.
 keys:
   - id: service-prod
     description: Production API, personal project
+    notes: Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.
     aliases: [prod, production]
     maps_to: SERVICE_API_KEY
     public:
@@ -152,13 +154,14 @@ keys:
 
   - id: service-dev
     description: Development environment
+    notes: Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.
     aliases: [dev, development]
     maps_to: SERVICE_API_KEY
     public:
       SERVICE_API_URL: https://api.dev.example.com
 ```
 
-`maps_to` is the environment variable the process should see. That is how two keys both become `SERVICE_API_KEY` at use time. `public` holds non-secret companions such as a base URL.
+`description` is when to use the key. Agents match against it to pick an entry. `notes` is how to use the key after it is chosen. `maps_to` is the environment variable the process should see. That is how two keys both become `SERVICE_API_KEY` at use time. `public` holds non-secret companions such as a base URL.
 
 Prefer letting an agent run `keybank add`. Hand-edits work if you stick to this shape.
 

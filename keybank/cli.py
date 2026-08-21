@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -38,6 +38,7 @@ class YamlError(KeybankError):
 class KeyEntry:
     id: str
     description: str
+    notes: str = ""
     aliases: list[str] = field(default_factory=list)
     maps_to: str = ""
     public: dict[str, str] = field(default_factory=dict)
@@ -46,6 +47,7 @@ class KeyEntry:
         return {
             "id": self.id,
             "description": self.description,
+            "notes": self.notes,
             "aliases": list(self.aliases),
             "maps_to": self.maps_to,
             "public": dict(self.public),
@@ -305,6 +307,8 @@ def dump_catalog(keys: list[KeyEntry]) -> str:
     for key in keys:
         lines.append(f"  - id: {yaml_quote(key.id)}")
         lines.append(f"    description: {yaml_quote(key.description)}")
+        if key.notes:
+            lines.append(f"    notes: {yaml_quote(key.notes)}")
         if key.aliases:
             aliases = ", ".join(yaml_quote(alias) for alias in key.aliases)
             lines.append(f"    aliases: [{aliases}]")
@@ -372,6 +376,9 @@ def entries_from_data(data: object) -> list[KeyEntry]:
         description = item.get("description", "")
         if not isinstance(description, str):
             raise KeybankError(f"{key_id}: description must be a string")
+        notes = item.get("notes", "")
+        if not isinstance(notes, str):
+            raise KeybankError(f"{key_id}: notes must be a string")
         maps_to = item.get("maps_to", "")
         if not isinstance(maps_to, str):
             raise KeybankError(f"{key_id}: maps_to must be a string")
@@ -385,6 +392,7 @@ def entries_from_data(data: object) -> list[KeyEntry]:
             KeyEntry(
                 id=key_id,
                 description=description.strip(),
+                notes=notes.strip(),
                 aliases=_as_str_list(item.get("aliases"), "aliases", key_id),
                 maps_to=maps_to,
                 public=public,
@@ -685,6 +693,7 @@ def cmd_show(args: argparse.Namespace) -> int:
         return 0
     print(f"id:          {entry.id}")
     print(f"description: {entry.description or '-'}")
+    print(f"notes:       {entry.notes or '-'}")
     print(f"aliases:     {', '.join(entry.aliases) if entry.aliases else '-'}")
     print(f"maps_to:     {entry.maps_to or '-'}")
     print(f"has_secret:  {'yes' if payload['has_secret'] else 'no'}")
@@ -733,9 +742,11 @@ def cmd_add(args: argparse.Namespace) -> int:
     if maps_to:
         validate_env_name(maps_to)
     description = args.description if args.description is not None else existing.description
+    notes = args.notes if args.notes is not None else (existing.notes if existing else "")
     entry = KeyEntry(
         id=args.id,
         description=description,
+        notes=notes,
         aliases=aliases,
         maps_to=maps_to,
         public=public,
@@ -1133,7 +1144,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_add = sub.add_parser("add", help="add or update a catalog entry (not the secret)")
     p_add.add_argument("id")
-    p_add.add_argument("--description")
+    p_add.add_argument(
+        "--description",
+        help="when to use this key; agents match against this to pick a key",
+    )
+    p_add.add_argument(
+        "--notes",
+        help="how to use this key after it is chosen; not used for matching",
+    )
     p_add.add_argument("--alias", action="append", default=[])
     p_add.add_argument("--maps-to", dest="maps_to")
     p_add.add_argument("--public", action="append", default=[], metavar="NAME=value")

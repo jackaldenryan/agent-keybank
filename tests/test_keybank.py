@@ -21,12 +21,14 @@ SAMPLE_YAML = """\
 keys:
   - id: service-prod
     description: Production API, personal project
+    notes: Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.
     aliases: [prod, production]
     maps_to: SERVICE_API_KEY
     public:
       SERVICE_API_URL: https://api.example.com
   - id: service-dev
     description: Development environment
+    notes: Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.
     aliases:
       - dev
       - development
@@ -107,10 +109,17 @@ class KeybankTest(unittest.TestCase):
         dev = keys[1]
         self.assertEqual(dev.aliases, ["dev", "development"])
         self.assertEqual(dev.public["SERVICE_API_URL"], "https://api.dev.example.com")
+        self.assertEqual(
+            dev.notes,
+            "Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.",
+        )
+        self.assertEqual(keys[2].notes, "")
         dumped = keybank.dump_catalog(keys)
         again = keybank.entries_from_data(keybank.parse_simple_yaml(dumped))
         self.assertEqual([key.id for key in again], [key.id for key in keys])
         self.assertEqual(again[0].aliases, ["prod", "production"])
+        self.assertEqual(again[0].notes, keys[0].notes)
+        self.assertNotIn("notes:", dumped.split("platform-work", 1)[1])
 
     def test_list_json_hides_secrets(self) -> None:
         self.seed()
@@ -119,6 +128,12 @@ class KeybankTest(unittest.TestCase):
         payload = json.loads(out)
         self.assertEqual(len(payload), 3)
         self.assertTrue(all(item["has_secret"] for item in payload))
+        self.assertIn("notes", payload[0])
+        self.assertEqual(
+            payload[0]["notes"],
+            "Load env vars as-is. The client reads SERVICE_API_URL without a path suffix.",
+        )
+        self.assertEqual(payload[2]["notes"], "")
         self.assert_no_secrets(out, err)
 
     def test_list_table_and_show(self) -> None:
@@ -132,6 +147,7 @@ class KeybankTest(unittest.TestCase):
         code, out, err = self.run_cli("show", "development")
         self.assertEqual(code, 0, err)
         self.assertIn("id:          service-dev", out)
+        self.assertIn("notes:       Load env vars as-is.", out)
         self.assertIn("SERVICE_API_URL=https://api.dev.example.com", out)
         self.assert_no_secrets(out, err)
 
@@ -152,6 +168,9 @@ class KeybankTest(unittest.TestCase):
         code, _, err = self.run_cli("resolve", "does-not-exist")
         self.assertEqual(code, 1)
         self.assertIn("no key matched", err)
+        code, _, err = self.run_cli("resolve", "path suffix")
+        self.assertEqual(code, 1)
+        self.assertIn("no key matched", err)
 
     def test_add_and_set_secret(self) -> None:
         self.init_bank()
@@ -160,6 +179,8 @@ class KeybankTest(unittest.TestCase):
             "billing-test",
             "--description",
             "Billing test mode",
+            "--notes",
+            "Set BILLING_MODE from public. Do not rename it.",
             "--alias",
             "billing",
             "--maps-to",
@@ -189,8 +210,20 @@ class KeybankTest(unittest.TestCase):
         self.assertEqual(code, 0, err)
         entry = keybank.require_one(keybank.load_catalog(), "billing-test")
         self.assertEqual(entry.description, "Billing test mode, updated")
+        self.assertEqual(entry.notes, "Set BILLING_MODE from public. Do not rename it.")
         self.assertEqual(entry.aliases, ["billing"])
         self.assertEqual(keybank.load_secrets()["billing-test"], "test_secret_123")
+        code, _, err = self.run_cli(
+            "add",
+            "billing-test",
+            "--update",
+            "--notes",
+            "Pass BILLING_API_KEY through unchanged.",
+        )
+        self.assertEqual(code, 0, err)
+        entry = keybank.require_one(keybank.load_catalog(), "billing-test")
+        self.assertEqual(entry.description, "Billing test mode, updated")
+        self.assertEqual(entry.notes, "Pass BILLING_API_KEY through unchanged.")
 
     def test_load_writes_runtime_names_and_chmod(self) -> None:
         self.seed()

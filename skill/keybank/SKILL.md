@@ -12,7 +12,7 @@ description: >
 license: MIT
 compatibility: Requires Python 3.9+ and the keybank CLI on PATH
 metadata:
-  version: "0.1.1"
+  version: "0.1.2"
 ---
 
 # KeyBank
@@ -73,7 +73,7 @@ keybank run development -- python script.py
 
 ## Add a key
 
-Write the catalog entry only. Do not touch the secret.
+Write the catalog entry with `keybank add`. Do not open `secrets.env`. The CLI inserts a blank `id=` line there. Tell the user to paste the secret after the `=`.
 
 ```bash
 keybank add service-dev \
@@ -84,13 +84,7 @@ keybank add service-dev \
   --public SERVICE_API_URL=https://api.dev.example.com
 ```
 
-Then tell the user to paste the secret into `~/.keybank/secrets.env` as:
-
-```
-service-dev=<secret>
-```
-
-Never open that file to confirm. If they ask you to store a secret they already pasted in chat, tell them to paste it into `secrets.env` themselves.
+Then tell the user: open `~/.keybank/secrets.env` yourself and paste the value after `service-dev=`. Never open that file to confirm. If they ask you to store a secret they already pasted in chat, tell them to paste it into `secrets.env` themselves.
 
 Update metadata with `keybank add <id> --update ...`. Remove with `keybank remove <query> --yes`.
 

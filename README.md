@@ -36,9 +36,9 @@ keybank setup --agents claude,codex,cursor
 
 Say something like: “I need a development key and a production key for my API, both exposed as `SERVICE_API_KEY`.”
 
-The agent adds catalog entries with ids, descriptions, and the runtime name. It does not see the secrets.
+The agent adds catalog entries with ids, descriptions, and the runtime name. `keybank add` inserts blank `id=` lines. It does not see the secrets.
 
-Open `~/.keybank/secrets.env` and paste the values yourself:
+Open `~/.keybank/secrets.env` and paste each value after the `=`:
 
 ```
 service-prod=...
@@ -141,7 +141,7 @@ Run a command with the key in the process environment and skip writing a file.
 keybank run development -- python script.py
 ```
 
-Add a catalog entry. Then paste the secret into `~/.keybank/secrets.env`. You can also run `keybank set-secret <id>` and type it at a hidden prompt.
+Add a catalog entry. `keybank add` inserts a blank `id=` line in `~/.keybank/secrets.env`. Paste the secret after the `=`. You can also run `keybank set-secret <id>` and type it at a hidden prompt.
 
 ```
 keybank add service-dev \

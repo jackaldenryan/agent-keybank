@@ -189,8 +189,11 @@ class KeybankTest(unittest.TestCase):
             "BILLING_MODE=test",
         )
         self.assertEqual(code, 0, err)
-        self.assertIn("Paste the secret", out)
-        self.assertIn("billing-test=<secret>", out)
+        self.assertIn("Blank billing-test=", out)
+        self.assertEqual(keybank.load_secrets().get("billing-test"), "")
+        raw = keybank.secrets_path().read_text(encoding="utf-8")
+        self.assertIn("billing-test=\n", raw)
+        self.assertNotIn('billing-test=""', raw)
         code, out, err = self.run_cli("set-secret", "billing", stdin="test_secret_123")
         self.assertEqual(code, 0, err)
         self.assertEqual(keybank.load_secrets()["billing-test"], "test_secret_123")

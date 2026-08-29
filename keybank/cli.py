@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -450,7 +450,10 @@ def dump_env_file(values: dict[str, str], header: Optional[str] = None) -> str:
     if header:
         lines.append(header)
     for key, value in values.items():
-        lines.append(f"{key}={format_env_value(value)}")
+        if value == "":
+            lines.append(f"{key}=")
+        else:
+            lines.append(f"{key}={format_env_value(value)}")
     lines.append("")
     return "\n".join(lines)
 
@@ -761,8 +764,10 @@ def cmd_add(args: argparse.Namespace) -> int:
     print(f"{action} {args.id}.")
     secrets = load_secrets()
     if not secrets.get(args.id):
-        print(f"Paste the secret into {secrets_path()} as:")
-        print(f"  {args.id}=<secret>")
+        secrets[args.id] = ""
+        save_secrets(secrets)
+        print(f"Blank {args.id}= is in {secrets_path()}. Paste the secret after the =.")
+        print("Do not open that file with an agent.")
     return 0
 
 
